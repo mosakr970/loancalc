@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Loan Decision Engine</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 24px; max-width: 720px; }
+        .card { border: 1px solid #ccc; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+        label { display: block; margin-top: 12px; }
+        input { width: 100%; padding: 8px; margin-top: 4px; }
+        button { margin-top: 14px; padding: 10px 20px; }
+        .result { padding: 12px; border-radius: 8px; }
+        .approved { background:#e8f7e4; border:1px solid #57a670; }
+        .rejected { background:#fbe8eb; border:1px solid #d34149; }
+    </style>
+</head>
+<body>
+    <h1>Loan Decision Engine</h1>
+    <div class="card">
+        <div>
+            <label>Personal Code (e.g. 49002010976) <input id="personalCode" value="49002010976" /></label>
+            <label>Requested Amount (€) <input id="amount" type="number" min="2000" max="10000" value="4000" /></label>
+            <label>Requested Period (months) <input id="period" type="number" min="12" max="60" value="24" /></label>
+            <button id="submitBtn">Get Decision</button>
+        </div>
+    </div>
+    <div id="response" class="card" style="display:none;"></div>
+
+    <script>
+        document.getElementById('submitBtn').addEventListener('click', async () => {
+            const personalCode = document.getElementById('personalCode').value;
+            const amount = Number(document.getElementById('amount').value);
+            const period = Number(document.getElementById('period').value);
+
+            const payload = { personalCode, requestedAmount: amount, requestedPeriod: period };
+            const responseArea = document.getElementById('response');
+
+            try {
+                const resp = await fetch('/api/loan/decision', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await resp.json();
+                responseArea.style.display = 'block';
+                responseArea.className = 'card result ' + (data.approved ? 'approved' : 'rejected');
+                responseArea.innerHTML = `
+                    <h3>${data.approved ? 'Approved' : 'Rejected'}</h3>
+                    <p><strong>Approved Amount</strong>: €${data.approvedAmount.toFixed(2)}</p>
+                    <p><strong>Approved Period</strong>: ${data.approvedPeriod} months</p>
+                    <p><strong>Credit Score</strong>: ${data.score.toFixed(3)}</p>
+                    <p><strong>Reason</strong>: ${data.reason}</p>
+                `;
+            } catch (err) {
+                responseArea.style.display = 'block';
+                responseArea.className = 'card rejected';
+                responseArea.innerHTML = '<p>Error calling API: ' + err.message + '</p>';
+            }
+        });
+    </script>
+</body>
+</html>
